@@ -11,9 +11,10 @@ bash: check_uid_and_env_vars
 
 up: check_uid_and_env_vars
 	export COMPOSER_HOME=$(COMPOSER_HOME) && export COMPOSER_CACHE_DIR=$(COMPOSER_CACHE_DIR) && export UID && docker-compose up -d
+	bin/wait_for_docker.bash "Starting periodic command scheduler"
 
 down:
-	docker-compose down
+	docker-compose down -v
 
 logs_tail:
 	if [ -z "$(UID)" ]; then echo "UID variable required, please run 'export UID' before running make task"; exit 1 ; fi
@@ -22,8 +23,11 @@ logs_tail:
 composer_bash:
 	export UID && export COMPOSER_HOME=$(COMPOSER_HOME) && export COMPOSER_CACHE_DIR=$(COMPOSER_CACHE_DIR)  && docker-compose run composer bash
 
+php_bash:
+	export UID && export COMPOSER_HOME=$(COMPOSER_HOME) && export COMPOSER_CACHE_DIR=$(COMPOSER_CACHE_DIR)  && docker-compose exec phplist bash
+
 mailcatcher_bash:
-	export UID && export COMPOSER_HOME=$(COMPOSER_HOME) && export COMPOSER_CACHE_DIR=$(COMPOSER_CACHE_DIR)  && docker-compose run smtp /bin/ash
+	export UID && export COMPOSER_HOME=$(COMPOSER_HOME) && export COMPOSER_CACHE_DIR=$(COMPOSER_CACHE_DIR)  && docker-compose exec smtp /bin/ash
 
 docker-compose-config:
 	echo $(COMPOSER_HOME)

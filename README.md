@@ -7,9 +7,9 @@ Run a phplist benchmark using this project.
 Ideally a project that can run anywhere, as such docker is used with :
 
 - mailcatcher to run a dummy SMTP server
-- php cli
+- phplist image
 - mysql
-- composer is used to initialised the project
+- composer is used to initialised the project (only for phplist 4 version when a [stable schema is available](https://github.com/phpList/core/pull/312) )
 - make, always use make as a step/task wrapper
 
 ## Boot up

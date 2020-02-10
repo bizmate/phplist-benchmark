@@ -1,20 +1,36 @@
-version: '3.7'
+version: '3.5'
 
 services:
-  php:
-    build: docker/php
-    user: $UID
+
+  mailhost:
+   image: phplist/postfix:latest
+   restart: always
+   volumes:
+     - mailhost_spool:/var/spool/postfix
+
+  phplist:
+    depends_on:
+     - db
+     - mailhost
+     - smtp
+    image: phplist/phplist:latest
     volumes:
-      - ./docker/config/php.ini:/usr/local/etc/php/php.ini
-      #- ./docker/config/blackfire.ini:/usr/local/etc/php/conf.d/blackfire.ini
-      - /etc/group:/etc/group:ro
-      - /etc/passwd:/etc/passwd
-      - websrc:/var/www/html/:z
+     - images:/var/www/phpList3/public_html/images
+     - ./config/config.php:/var/www/phpList3/public_html/lists/config/config.php:z
+    ports:
+     - "8080:80"
+    restart: always
     environment:
-      - DB_DATABASE
-      - DB_USERNAME
-      - DB_PASSWORD
-      - DB_HOSTNAME
+      DB_HOST: db
+      DB_USER: phplist
+      DB_PASSWORD: phplist
+      DB_NAME: phplist
+      MAILHOST: smtp
+      ADMIN_NAME: admin
+      ADMIN_PASSWORD: password
+      ADMIN_EMAIL: diegogullo@gmail.com
+      HOSTNAME: localhost
+      PORT: 8080
 
   db:
     image: mysql:5.7
@@ -24,7 +40,7 @@ services:
       ]
     restart: always
     ports:
-      - "3333:3306"
+      - "3334:3306"
     environment:
       MYSQL_ROOT_PASSWORD: phplist
       MYSQL_DATABASE: phplist
@@ -34,32 +50,12 @@ services:
       - mysqldata:/var/lib/mysql
       - ./docker/mysql/docker.cnf:/etc/mysql/conf.d/docker.cnf
 
-  composer:
-    build: docker/composer
-    user: $UID
-    environment:
-      - HOME=/home/composer
-    volumes:
-      - websrc:/app
-      - ${COMPOSER_HOME}:/home/composer/.config/composer
-      - ${COMPOSER_CACHE_DIR}:/home/composer/.cache/composer
-      - ${HOME}/.gitconfig:/home/composer/.gitconfig:Z
-    command: composer create-project -s dev --no-dev phplist/base-distribution src
-    working_dir: /app
-
   smtp:
     image: tophfr/mailcatcher
-    depends_on:
-      - php
     ports:
       - "1080:80"
       - "1025:25"
-
 volumes:
-  mysqldata:
-  websrc:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: $PWD
+    images:
+    mailhost_spool:
+    mysqldata:

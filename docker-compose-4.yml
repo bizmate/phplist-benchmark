@@ -1,0 +1,66 @@
+version: '3.7'
+
+services:
+  php:
+    build: docker/php
+    user: $UID
+    volumes:
+      - ./docker/config/php.ini:/usr/local/etc/php/php.ini
+      #- ./docker/config/blackfire.ini:/usr/local/etc/php/conf.d/blackfire.ini
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd
+      - websrc:/var/www/html/:z
+    working_dir: /var/www/html
+    environment:
+      PHPLIST_DATABASE_HOST: db
+      PHPLIST_DATABASE_USER: phplist
+      PHPLIST_DATABASE_PASSWORD: phplist
+
+  db:
+    image: mysql:5.7
+    command: [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+      ]
+    restart: always
+    ports:
+      - "3334:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: phplist
+      MYSQL_DATABASE: phplist
+      MYSQL_USER: phplist
+      MYSQL_PASSWORD: phplist
+    volumes:
+      - mysqldata:/var/lib/mysql
+      - ./docker/mysql/docker.cnf:/etc/mysql/conf.d/docker.cnf
+
+  composer:
+    build: docker/composer
+    user: $UID
+    environment:
+      - HOME=/home/composer
+    volumes:
+      - websrc:/app
+      - ${COMPOSER_HOME}:/home/composer/.config/composer
+      - ${COMPOSER_CACHE_DIR}:/home/composer/.cache/composer
+      - ${HOME}/.gitconfig:/home/composer/.gitconfig:Z
+#    command: composer create-project -s dev --no-dev phplist/base-distribution src
+    command: bin/install_phplist.sh
+    working_dir: /app
+
+  smtp:
+    image: tophfr/mailcatcher
+    depends_on:
+      - php
+    ports:
+      - "1080:80"
+      - "1025:25"
+
+volumes:
+  mysqldata:
+  websrc:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: $PWD
